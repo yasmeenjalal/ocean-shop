@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Validation\ValidationException;
+
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -32,4 +34,31 @@ class AuthController extends Controller
             'token' => $token,
         ], 201);
     }
+
+public function login(Request $request): JsonResponse
+{
+    $data = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required', 'string'],
+    ]);
+
+    $user = User::where('email', $data['email'])->first();
+
+    if (! $user || ! Hash::check($data['password'], $user->password)) {
+        throw ValidationException::withMessages([
+            'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة'],
+        ]);
+    }
+
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'تم تسجيل الدخول بنجاح',
+        'user' => $user,
+        'token' => $token,
+    ]);
+}
+
+
+
 }
